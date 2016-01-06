@@ -1,0 +1,71 @@
+resource "aws_vpc" "network" {
+  cidr_block           = "${var.ip_prefix}.0.0/16"
+  enable_dns_hostnames = true
+  enable_dns_support   = true
+}
+
+resource "aws_internet_gateway" "internet_gateway" {
+  vpc_id ="${aws_vpc.network.id}"
+
+  tags {
+    Name = "internet_gateway"
+  }
+}
+
+resource "aws_route_table" "public" {
+  vpc_id = "${aws_vpc.network.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.internet_gateway.id}"
+  }
+
+  tags {
+    Name = "public"
+  }
+}
+
+resource "aws_main_route_table_association" "public_association" {
+  vpc_id         = "${aws_vpc.network.id}"
+  route_table_id = "${aws_route_table.public.id}"
+}
+
+resource "aws_route_table" "private" {
+  vpc_id = "${aws_vpc.network.id}"
+
+  tags {
+    Name = "private"
+  }
+}
+
+<% %w(public private).each.with_index do |publicness, publicness_index| %>
+  <% %w(a c).each.with_index do |az, az_index| %>
+    resource "aws_subnet" "<%= publicness %>_<%= az %>" {
+      vpc_id                  = "${aws_vpc.network.id}"
+      cidr_block              = "${var.ip_prefix}.<%= publicness_index * 32 + az_index * 16 %>.0/20"
+      availability_zone       = "${var.region}<%= az %>"
+      map_public_ip_on_launch = <%= publicness == "public" ? "true" : "false" %>
+
+      tags {
+        Name = "<%= publicness %>_<%= az %>"
+      }
+    }
+
+    <% if publicness == "private" %>
+      resource "aws_route_table_association" "<%= publicness %>_<%= az %>_association" {
+        subnet_id      = "${aws_subnet.<%= publicness %>_<%= az %>.id}"
+        route_table_id = "${aws_route_table.private.id}"
+      }
+    <% end %>
+  <% end %>
+<% end %>
+
+resource "aws_vpc_endpoint" "vpc_endpoint_s3" {
+  vpc_id       = "${aws_vpc.network.id}"
+  service_name = "com.amazonaws.${var.region}.s3"
+
+  route_table_ids = [
+    "${aws_route_table.public.id}",
+    "${aws_route_table.private.id}",
+  ]
+}

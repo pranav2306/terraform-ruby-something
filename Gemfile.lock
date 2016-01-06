@@ -1,0 +1,21 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+    coercible (1.0.0)
+      descendants_tracker (~> 0.0.1)
+    descendants_tracker (0.0.4)
+      thread_safe (~> 0.3, >= 0.3.1)
+    rake (10.4.2)
+    symmetric-encryption (3.8.2)
+      coercible (~> 1.0)
+    thread_safe (0.3.5)
+
+PLATFORMS
+  ruby
+
+DEPENDENCIES
+  rake
+  symmetric-encryption
+
+BUNDLED WITH
+   1.10.6

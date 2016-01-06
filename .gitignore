@@ -1,0 +1,10 @@
+.DS_Store
+.envrc
+*.pem
+terraform.tfstate
+terraform.tfstate.backup
+*.zip
+.bundle
+vendor/bundle
+vendor/terraform*
+*.tf
